@@ -17,9 +17,11 @@ public:
 	    st.push(0);
 	    std::vector<std::string> path;
 	    DFS(word, st, root.get(), path);
-	    std::cout << "curr = " << word << std::endl;
-	    std::copy(path.begin(), path.end(), std::ostream_iterator<std::string>(std::cout, " "));
-	    std::cout << std::endl;
+            if (!path.empty()) {
+                std::cout << "curr = " << word << std::endl;
+                std::copy(path.begin(), path.end(), std::ostream_iterator<std::string>(std::cout, " "));
+                std::cout << std::endl;
+            }
 	    if (!path.empty())
 		res.push_back(word);
 	}
@@ -29,11 +31,16 @@ public:
 private:
     struct TrieNode {
 	bool isEnd;
-	std::unique_ptr<TrieNode[]> next;
+        std::vector<std::unique_ptr<TrieNode>> next;
 
-	TrieNode(bool end=false) : isEnd(end) {
-	    next = std::unique_ptr<TrieNode[]>(new TrieNode[26]);
+	TrieNode(bool e=false) : isEnd(e) {
+            for (int i = 0; i < 26; i++)
+                next.push_back(nullptr);
 	}
+
+        ~TrieNode() {
+            
+        }
     };
 
     TrieNode * buildTrie(const std::vector<std::string> & strs) {
@@ -41,10 +48,10 @@ private:
 	for (const auto & str : strs) {
 	    TrieNode * curr = root;
 	    for (size_t i = 0; i < str.size(); i++) {
-		if (curr->next[str[i]-'a']) {
+		if (curr->next[str[i]-'a'] == nullptr) {
 		    curr->next[str[i]-'a'].reset(new TrieNode());
 		    if (i == str.size()-1)
-			curr->isEnd = true;
+			curr->next[str[i]-'a']->isEnd = true;
 		}
 		curr = curr->next[str[i]-'a'].get();
 	    }
@@ -63,11 +70,18 @@ private:
 	    node = root;
 	    while (node != nullptr) {
 		node = node->next[s[idx]-'a'].get();
-		if (node->isEnd) {
-		    st.push(idx);
-		    DFS(s, st, root, path);
-		    if (curr != 0 || idx != s.size()-1)
-			path.push_back(s.substr(curr, idx+1-curr));
+		if (node != nullptr && node->isEnd) {
+                    if (curr != 0 && idx == s.size()-1) {
+                        path.push_back(s.substr(curr, idx+1-curr));
+                    }
+                    else if (curr == 0 && idx == s.size()-1)
+                             st.push(idx+1);
+                    else {
+                        st.push(idx+1);
+                        DFS(s, st, root, path);
+                        if (!path.empty())
+                            path.insert(path.begin(), s.substr(curr, idx+1-curr));
+                    }
 		}
 		idx++;
 	    }
